@@ -11,6 +11,7 @@ import BEP_code_correct_inclHb
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import argrelextrema
+from scipy.optimize import curve_fit
 
 #Important to note: this file changes a lot over time if I want to 
 #plot different functions as a function of J. In this case I used this file
@@ -23,64 +24,83 @@ def find_first_peak_index(array):
     # Find the index of the first peak
     return extrema_indices[0] if len(extrema_indices) > 0 else None
 
+def function_fit(x,a):
+    return a/(x)
+
+def tanh(x,a,b):
+    return a*np.tan(x-b)
 
 #allthough I've imported the main file above, I still define the parameters
 #again, so I can use them to e.g. make the titles of the plots more accurate.
 #Besides it is more convenient, because I don't need to take the paramters
 #of the other evaluation files into consideration.
 N = 20
-Nb = 20
-Nc = N
-m = N
+Nb = 5
+Nc = 60
+m = 30
 omega_b = 2
 omega_c = 2
 g = 1
 
-N_datapoints = 46
-J_largest = (N_datapoints-1)/3
-t_end = 10
-t_steps = 4000
+Nb2 = 5
+
+
+N_datapoints=30
+t_end = 60
+t_steps = 12000
 t = np.linspace(0, t_end, t_steps + 1)
-charging_times_energy = np.zeros(N_datapoints)
-charging_times_fluc = np.zeros(N_datapoints)
-J_values = np.linspace(0, J_largest, N_datapoints)
-E_t_num = np.empty(len(t))
-fluc_t_num = np.empty(len(t))
+E_max = np.zeros(N_datapoints)
+fluc_at_Emax = np.zeros(N_datapoints)
+J_values = np.linspace(1, 50, N_datapoints)
+E_t= np.empty(len(t))
+fluc=np.empty(len(t))
 
 for iii in range(N_datapoints):
     jjj = 0
     for t_step in t:
-        E_t_num[jjj] = BEP_code_correct_inclHb.E_t(t_step, Nb, Nc, m, J_values[iii], omega_b, omega_c, g)
-        fluc_t_num[jjj] = BEP_code_correct_inclHb.fluctuations(t_step, Nb, Nc, m, J_values[iii], omega_b, omega_c, g)
+        E_t[jjj] = BEP_code_correct_inclHb.E_t(t_step, Nb, Nc, m, J_values[iii], omega_b, omega_c, g)
+        fluc[jjj] = BEP_code_correct_inclHb.fluctuations(t_step, Nb, Nc, m, J_values[iii], omega_b, omega_c, g)
         jjj += 1
-
-    energy_peak_index = find_first_peak_index(E_t_num)
-    fluc_peak_index = find_first_peak_index(fluc_t_num)
-    time_energy_peak = t[energy_peak_index] if energy_peak_index is not None else None
-    time_fluc_peak = t[fluc_peak_index] if fluc_peak_index is not None else None
-
-    charging_times_energy[iii] = time_energy_peak
-    charging_times_fluc[iii] = time_fluc_peak
+    
+    energy_peak_index = np.argmax(E_t)
+    E_max[iii] = E_t[energy_peak_index]
+    fluc_at_Emax[iii]=fluc[energy_peak_index]
+    
+#E_fit_values,cov=curve_fit(tanh,J_values,E_max)
+h_continuous=np.linspace(1,50,1000)
+ftsize=16
 
 # Plotting
 plt.figure(1)
-plt.title('Charging Time to First Peak of $E$ as a function of $J$, $ 0\leq J \leq {}$, $g={}$ $\omega=2$, $N_b=10$ $m=N_c={}$'.format(J_largest, g, N))
-plt.plot(J_values, charging_times_energy, label='Energy')
-plt.xlabel('$J$')
-plt.ylabel('Charging Time to First Peak')
-plt.legend()
-plt.savefig('E_charge_time_smallbeat_Nb=10_Ncm=20.pdf',bbox_inches='tight')
+#plt.plot(h_continuous, tanh(h_continuous,*E_fit_values))
+plt.plot(J_values,E_max ,'.',markersize=8,label='Values $N_b=4$')
+plt.plot(h_continuous,np.full(len(h_continuous),omega_b*Nb/4),linestyle='--',color='orange')
+plt.plot(h_continuous,np.full(len(h_continuous),-omega_b*Nb/4),linestyle='--',color='orange')
+plt.axvline(23.7,color='red',linestyle='--')
+plt.xlabel('$J\;\;[\hbar\omega]$', fontsize=ftsize)
+plt.ylabel('$E_{max}\;\;[(\hbar\omega)]$', fontsize=ftsize)
+#plt.legend()
+plt.xticks(fontsize=13)
+plt.yticks(fontsize=13)
+plt.grid()
+plt.tight_layout()
+plt.savefig('E_max_Nb={}_Nc={}_m={}_g={}_varyingJ.pdf'.format(Nb,Nc,m,g),bbox_inches='tight')
 plt.show()
 
+# Plotting
 plt.figure(2)
-plt.title('Charging Time to First Peak of $\Sigma^2$ as a function of $J$, $0 \leq J \leq {}$, $g={}$, $\omega=2$, $N_b=10$ $m=N_c={}$'.format(J_largest, g, N))
-plt.plot(J_values, charging_times_fluc, label='Fluctuations')
-plt.xlabel('$J$')
-plt.ylabel('Charging Time to First Peak')
-plt.legend()
-plt.savefig('f_charge_time_smallbeat_Nb=10_Ncm=20.pdf',bbox_inches='tight')
+plt.plot(J_values,fluc_at_Emax ,'.',markersize=8,label='Values $N_b=4$')
+plt.plot(h_continuous,np.full(len(h_continuous),0),linestyle='--',color='orange')
+plt.axvline(23.7,color='red',linestyle='--')
+plt.xlabel('$J\;\;[\hbar\omega]$', fontsize=ftsize)
+plt.ylabel('$\Sigma^2_{max}\;\;[(\hbar\omega)^2]$', fontsize=ftsize)
+#plt.legend()
+plt.xticks(fontsize=13)
+plt.yticks(fontsize=13)
+plt.grid()
+plt.tight_layout()
+plt.savefig('fluc_max_Nb={}_Nc={}_m={}_g={}_varyingJ.pdf'.format(Nb,Nc,m,g),bbox_inches='tight')
 plt.show()
-
 
 '''
 plt.figure(3)
