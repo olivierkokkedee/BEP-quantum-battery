@@ -14,22 +14,26 @@ import matplotlib.pyplot as plt
 import math
 from scipy.optimize import curve_fit
 
-def linear(x,a,b):
-    return a*x+b
-
-def quadratic(x,a,b,c):
-    return a*x**2+b*x+c
 #this file is quite similar to "evaulation_change_J.py", so please
 #take a look at that file if something is unclear.
-Nb=4
 
-J=1
+def fit_fluc(x,a,b):
+    return a*(1-np.cos(b/x))
+
+def fit_E(x,b):
+    return 2.5*np.cos(b/x)
+Nb=5
+
+h=1
+J=h
 omega_b=2
 omega_c=2
-g=15
-
-N_datapoints=40
-N_values=np.linspace(0,N_datapoints-1,N_datapoints)+Nb
+g=h
+ftsize=16
+N_datapoints=21
+N_start=5
+N_end=41
+N_values=np.linspace(N_start,N_end,N_datapoints)
 '''
 max_values_fluc=np.zeros(N_datapoints)
 max_values_energy=np.zeros(N_datapoints)
@@ -45,12 +49,11 @@ for iii in range(N_datapoints):
     max_values_fluc[iii]=np.amax(fluc_t_num)
     
     '''
-t_end=5e14
-t_steps=4000
-t=np.linspace(0,t_end,t_steps+1)
-N_graphs=5
-E_graphs=[]
-fluc_graphs=[]
+t_end=10
+t_steps=8000
+t=np.linspace(0,t_end,t_steps)
+
+'''
 for jjj in range(N_graphs):
     E_temp=np.empty(len(t))
     fluc_temp=np.empty(len(t))
@@ -66,56 +69,56 @@ for jjj in range(N_graphs):
         max_fluc_temp[iii]=np.amax(fluc_temp)
     E_graphs.append(max_E_temp)
     fluc_graphs.append(max_fluc_temp)
+'''
+
+E_num=np.empty(len(t))
+fluc_num=np.empty(len(t))
+E_max=np.zeros(N_datapoints)
+fluc_at_max_E=np.zeros(N_datapoints)
+for iii in range(N_datapoints):
+    kkk=0
+    for t_step in t:
+        E_num[kkk]=BEP_code_correct_inclHb.E_t(t_step, Nb, int(N_values[iii]*2), int(N_values[iii]), h, omega_b, omega_c, h)
+        fluc_num[kkk]=BEP_code_correct_inclHb.fluctuations(t_step, Nb, int(N_values[iii]*2), int(N_values[iii]), h, omega_b, omega_c, h)
+        kkk+=1
+    index_max_E=np.argmax(E_num)
+    print(index_max_E)
+    E_max[iii]=E_num[index_max_E]
+    fluc_at_max_E[iii]=fluc_num[index_max_E]
     
-#E_fit,lin_cov=curve_fit(linear,N_values[8:22],max_values_energy[8:22])
-#sigma_fit,quad_cov=curve_fit(quadratic,N_values[8:22],max_values_fluc[8:22])
-'''
+
+
+E_fit_values,cov=curve_fit(fit_E,N_values,E_max)
+fluc_fit_values,cov=curve_fit(fit_fluc,N_values,fluc_at_max_E)
+
+N_continuous=np.linspace(N_start,N_end,1000)
 plt.figure(1)
-plt.title('$E(t)$ as a function of $N$, $0\leq N\leq 24$, $g={}$, J={}'.format(g,J))
-plt.plot(N_values,max_values_energy)
-#plt.plot(N_values,linear(N_values,*E_fit),'g--',label='a={}, b={}'.format(*list(np.around(np.array(E_fit),2))))
-plt.xlabel('$N$')
-plt.ylabel('$E(t)$')
-plt.legend()
-#plt.savefig('E_func_of_N_J={}_g={}.pdf'.format(J,g))
+plt.plot(N_continuous,fit_E(N_continuous,*E_fit_values),color='red',label='Fit')
+plt.plot(N_values,E_max,'b.',label='Found values')
+plt.plot(N_values,np.full(len(N_values),omega_b*Nb/4),linestyle='--',label='$E_{max}$')
+plt.xlabel('$m$', fontsize=ftsize)
+plt.ylabel('$E_b(t)\;\; [\hbar \omega]$', fontsize=ftsize)
+plt.xticks(fontsize=13)
+plt.yticks(fontsize=13)
+plt.legend(fontsize=12)
+plt.grid()
+plt.tight_layout()
+plt.savefig('E_max_Nb=5_h=1_fitat2_5.pdf')
 plt.show()
 
 
 plt.figure(2)
-plt.title('$\Sigma^2$ as a function of $N$, $2\leq N_b\leq 24$,$N_c=m=N_b$, $g=\omega =J=2$'.format())
-plt.plot(N_values,max_values_fluc)
-#plt.plot(N_values,quadratic(N_values,*sigma_fit),'g--',label='a={}, b={}, c={}'.format(*list(np.around(np.array(sigma_fit),2))))
-plt.xlabel('$N$')
-plt.ylabel('$\Sigma^2(t)$')
-#plt.savefig('fluc_func_of_N_J={}_g={}.pdf'.format(J,g))
-plt.legend()
-plt.show()
-'''
-plt.figure(1)
-plt.title('$E$ as a function of $N$, ${}\leq N_c,m\leq {}$, $N_b={}$, $g={}$'.format(Nb,Nb+N_datapoints-1,Nb,g))
-plt.plot(N_values,E_graphs[0],label='J=0')
-plt.plot(N_values,E_graphs[1],label='J=0.5')
-plt.plot(N_values,E_graphs[2],label='J=1')
-plt.plot(N_values,E_graphs[3],label='J=1.5')
-plt.plot(N_values,E_graphs[4],label='J=2')
-plt.xlabel('$N$')
-plt.ylabel('$E$')
-plt.legend()
-plt.savefig('E_func_N_Nb=4_inclJ=0_g=15.pdf')
-plt.show()
-
-
-plt.figure(2)
-plt.title('$\Sigma^2$ as a function of $N$, ${}\leq N_c,m\leq {}$, $N_b={}$, $g={}$'.format(Nb,Nb+N_datapoints-1,Nb,g))
-plt.plot(N_values,fluc_graphs[0],label='J=0')
-plt.plot(N_values,fluc_graphs[1],label='J=0.5')
-plt.plot(N_values,fluc_graphs[2],label='J=1')
-plt.plot(N_values,fluc_graphs[3],label='J=1.5')
-plt.plot(N_values,fluc_graphs[4],label='J=2')
-plt.xlabel('$N$')
-plt.ylabel('$\Sigma^2$')
-plt.savefig('fluc_func_of_N_Nb=4_inclJ=0_g=15.pdf')
-plt.legend()
+plt.plot(N_continuous,fit_fluc(N_continuous,*fluc_fit_values),color='red',label='Fit')
+plt.plot(N_values,fluc_at_max_E,'b.',label='Found values')
+plt.plot(N_values,np.full(len(N_values),0),linestyle='--')
+plt.xlabel('$m$', fontsize=ftsize)
+plt.ylabel('$\Sigma^2_b(t)\;\; [(\hbar \omega)^2]$', fontsize=ftsize)
+plt.xticks(fontsize=13)
+plt.yticks(fontsize=13)
+plt.legend(fontsize=12)
+plt.grid()
+plt.tight_layout()
+plt.savefig('fluc_at_E_max_Nb=5_h=1.pdf')
 plt.show()
 
 
