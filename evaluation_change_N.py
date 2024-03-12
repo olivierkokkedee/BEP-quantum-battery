@@ -7,7 +7,7 @@ Created on Mon Nov 13 16:46:37 2023
 
 import os
 
-os.chdir('C:/Users/private/Bureaublad/BEP')
+os.chdir('private')
 import BEP_code_correct_inclHb
 import numpy as np
 import matplotlib.pyplot as plt
