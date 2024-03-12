@@ -11,7 +11,7 @@ from itertools import combinations
 import pandas as pd
 import math
 import os
-os.chdir('C:/Users/private/Bureaublad/BEP')
+os.chdir('private')
 from scipy.optimize import curve_fit
 
 #Defining all parameters
