@@ -35,7 +35,7 @@ ftsize=16
 
 #%matplotlib inline
 #Opening the excel file which contains all contribution values n for certain states
-df = pd.read_excel('C:/Users/olivi/OneDrive/Bureaublad/BEP/nJ_contribution_per_state.xlsx')
+df = pd.read_excel('C:/Users/private/Bureaublad/BEP/nJ_contribution_per_state.xlsx')
 nJ_contribution = df.iloc[:, 1:].to_numpy()
 
 #u_j and b_j, as they are defined in Liu et al.
